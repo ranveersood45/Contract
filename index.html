@@ -47,6 +47,12 @@ button {
     font-size: 15px;
     cursor: pointer;
 }
+canvas {
+    border: 1px solid #ccc;
+    width: 100%;
+    height: 150px;
+    margin-bottom: 10px;
+}
 </style>
 
 <script>
@@ -74,7 +80,61 @@ function fillData() {
     document.getElementById("form_price").value = p.get("price") || "";
 }
 
-window.onload = fillData;
+// Signature pad variables
+let canvas, ctx, drawing = false;
+let lastX = 0, lastY = 0;
+
+function initSignaturePad() {
+    canvas = document.getElementById('signature-pad');
+    ctx = canvas.getContext('2d');
+
+    // Match canvas coordinate system to display size
+    const style = getComputedStyle(canvas);
+    canvas.width = parseInt(style.width);
+    canvas.height = parseInt(style.height);
+
+    canvas.addEventListener('mousedown', (e) => {
+        drawing = true;
+        const rect = canvas.getBoundingClientRect();
+        lastX = e.clientX - rect.left;
+        lastY = e.clientY - rect.top;
+    });
+
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mouseout', () => drawing = false);
+    canvas.addEventListener('mousemove', draw);
+}
+
+function draw(e) {
+    if (!drawing) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    lastX = x;
+    lastY = y;
+
+    document.getElementById('signature-input').value = canvas.toDataURL();
+}
+
+function clearSignature() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('signature-input').value = '';
+}
+
+window.onload = function() {
+    fillData();
+    initSignaturePad();
+};
 </script>
 </head>
 
@@ -162,6 +222,14 @@ carrier network to ensure a smooth and professional transport experience.
 <input type="hidden" name="Delivery ZIP" id="form_dzip">
 <input type="hidden" name="Pickup Date" id="form_date">
 <input type="hidden" name="Quoted Price" id="form_price">
+
+<!-- Signature Pad -->
+<div>
+    <label><strong>Sign Here:</strong></label>
+    <canvas id="signature-pad"></canvas>
+    <button type="button" onclick="clearSignature()">Clear Signature</button>
+    <input type="hidden" name="Signature" id="signature-input">
+</div>
 
 <p>
     <input type="checkbox" required>
