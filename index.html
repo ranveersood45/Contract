@@ -52,14 +52,16 @@ canvas {
     width: 100%;
     height: 150px;
     margin-bottom: 10px;
+    touch-action: none;
 }
 </style>
 
 <script>
+
 function fillData() {
+
     const p = new URLSearchParams(window.location.search);
 
-    // Display data
     document.getElementById("vehicle").innerText = p.get("vehicle") || "";
     document.getElementById("condition").innerText = p.get("condition") || "";
     document.getElementById("pickup").innerText = p.get("pickup") || "";
@@ -69,7 +71,6 @@ function fillData() {
     document.getElementById("date").innerText = p.get("date") || "";
     document.getElementById("price").innerText = p.get("price") || "";
 
-    // Send same data to FormSubmit hidden fields
     document.getElementById("form_vehicle").value = p.get("vehicle") || "";
     document.getElementById("form_condition").value = p.get("condition") || "";
     document.getElementById("form_pickup").value = p.get("pickup") || "";
@@ -80,67 +81,100 @@ function fillData() {
     document.getElementById("form_price").value = p.get("price") || "";
 }
 
-// Signature pad variables
-let canvas, ctx, drawing = false;
-let lastX = 0, lastY = 0;
+let canvas, ctx;
+let drawing = false;
+let lastX = 0;
+let lastY = 0;
 
-function initSignaturePad() {
-    canvas = document.getElementById('signature-pad');
-    ctx = canvas.getContext('2d');
+function initSignaturePad(){
 
-    // Match canvas coordinate system to display size
+    canvas = document.getElementById("signature-pad");
+    ctx = canvas.getContext("2d");
+
     const style = getComputedStyle(canvas);
     canvas.width = parseInt(style.width);
     canvas.height = parseInt(style.height);
 
-    canvas.addEventListener('mousedown', (e) => {
-        drawing = true;
+    function getPosition(e){
+
         const rect = canvas.getBoundingClientRect();
-        lastX = e.clientX - rect.left;
-        lastY = e.clientY - rect.top;
-    });
 
-    canvas.addEventListener('mouseup', () => drawing = false);
-    canvas.addEventListener('mouseout', () => drawing = false);
-    canvas.addEventListener('mousemove', draw);
+        if(e.touches){
+            return {
+                x: e.touches[0].clientX - rect.left,
+                y: e.touches[0].clientY - rect.top
+            };
+        }else{
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+    }
+
+    function start(e){
+        drawing = true;
+        const pos = getPosition(e);
+        lastX = pos.x;
+        lastY = pos.y;
+    }
+
+    function move(e){
+
+        if(!drawing) return;
+
+        e.preventDefault();
+
+        const pos = getPosition(e);
+
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#000";
+
+        ctx.beginPath();
+        ctx.moveTo(lastX,lastY);
+        ctx.lineTo(pos.x,pos.y);
+        ctx.stroke();
+
+        lastX = pos.x;
+        lastY = pos.y;
+
+        document.getElementById("signature-input").value = canvas.toDataURL();
+    }
+
+    function end(){
+        drawing = false;
+    }
+
+    canvas.addEventListener("mousedown",start);
+    canvas.addEventListener("mousemove",move);
+    canvas.addEventListener("mouseup",end);
+    canvas.addEventListener("mouseout",end);
+
+    canvas.addEventListener("touchstart",start);
+    canvas.addEventListener("touchmove",move);
+    canvas.addEventListener("touchend",end);
 }
 
-function draw(e) {
-    if (!drawing) return;
+function clearSignature(){
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-
-    lastX = x;
-    lastY = y;
-
-    document.getElementById('signature-input').value = canvas.toDataURL();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    document.getElementById("signature-input").value="";
 }
 
-function clearSignature() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    document.getElementById('signature-input').value = '';
-}
+window.onload = function(){
 
-window.onload = function() {
     fillData();
     initSignaturePad();
 };
+
 </script>
 </head>
 
 <body>
 
 <h1>Vehicle Transport Agreement</h1>
+
 <div class="subtitle">
 SkyLine Professional Logistics LLC | Licensed & Bonded Auto Transport Coordination
 </div>
@@ -148,64 +182,64 @@ SkyLine Professional Logistics LLC | Licensed & Bonded Auto Transport Coordinati
 <div class="section">
 
 <div class="row">
-    <div style="flex:2;">
-        <div class="label">Vehicle</div>
-        <div id="vehicle"></div>
-    </div>
+<div style="flex:2;">
+<div class="label">Vehicle</div>
+<div id="vehicle"></div>
+</div>
 
-    <div style="flex:1;">
-        <div class="label">Condition</div>
-        <div id="condition"></div>
-    </div>
+<div style="flex:1;">
+<div class="label">Condition</div>
+<div id="condition"></div>
+</div>
 </div>
 
 <hr>
 
 <div class="row">
-    <div style="flex:2;">
-        <div class="label">Pickup Address</div>
-        <div id="pickup"></div>
-    </div>
+<div style="flex:2;">
+<div class="label">Pickup Address</div>
+<div id="pickup"></div>
+</div>
 
-    <div style="flex:1;">
-        <div class="label">Pickup ZIP Code</div>
-        <div id="pzip"></div>
-    </div>
+<div style="flex:1;">
+<div class="label">Pickup ZIP Code</div>
+<div id="pzip"></div>
+</div>
 </div>
 
 <div class="row">
-    <div style="flex:2;">
-        <div class="label">Dropoff Address</div>
-        <div id="delivery"></div>
-    </div>
+<div style="flex:2;">
+<div class="label">Dropoff Address</div>
+<div id="delivery"></div>
+</div>
 
-    <div style="flex:1;">
-        <div class="label">Dropoff ZIP Code</div>
-        <div id="dzip"></div>
-    </div>
+<div style="flex:1;">
+<div class="label">Dropoff ZIP Code</div>
+<div id="dzip"></div>
+</div>
 </div>
 
 <hr>
 
 <div class="row">
-    <div style="flex:2;">
-        <div class="label">Estimated Pickup Date</div>
-        <div id="date"></div>
-    </div>
+<div style="flex:2;">
+<div class="label">Estimated Pickup Date</div>
+<div id="date"></div>
+</div>
 
-    <div style="flex:1;">
-        <div class="label">Total Price</div>
-        <div>$<span id="price"></span></div>
-    </div>
+<div style="flex:1;">
+<div class="label">Total Price</div>
+<div>$<span id="price"></span></div>
+</div>
 </div>
 
 </div>
 
 <h3>Terms & Agreement</h3>
+
 <p>
 By confirming your booking below, you are securing your vehicle shipment with 
-SkyLine Professional Logistics LLC. Our team will coordinate with our trusted, licensed, and insured 
-carrier network to ensure a smooth and professional transport experience.
+SkyLine Professional Logistics LLC. Our team will coordinate with our trusted, licensed, and insured carrier network to ensure a smooth and professional transport experience.
 </p>
 
 <form action="https://formsubmit.co/ranveer.sood45@gmail.com" method="POST">
@@ -223,17 +257,16 @@ carrier network to ensure a smooth and professional transport experience.
 <input type="hidden" name="Pickup Date" id="form_date">
 <input type="hidden" name="Quoted Price" id="form_price">
 
-<!-- Signature Pad -->
 <div>
-    <label><strong>Sign Here:</strong></label>
-    <canvas id="signature-pad"></canvas>
-    <button type="button" onclick="clearSignature()">Clear Signature</button>
-    <input type="hidden" name="Signature" id="signature-input">
+<label><strong>Sign Here:</strong></label>
+<canvas id="signature-pad"></canvas>
+<button type="button" onclick="clearSignature()">Clear Signature</button>
+<input type="hidden" name="Signature" id="signature-input">
 </div>
 
 <p>
-    <input type="checkbox" required>
-    I confirm the above information is accurate and agree to proceed.
+<input type="checkbox" required>
+I confirm the above information is accurate and agree to proceed.
 </p>
 
 <button type="submit">Confirm Booking</button>
