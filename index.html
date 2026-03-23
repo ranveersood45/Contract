@@ -24,6 +24,7 @@ fetch("https://api.ipify.org?format=json")
 .then(res => res.json())
 .then(data => { userIP = data.ip; });
 
+// Prefill
 function fillData() {
     const p = new URLSearchParams(window.location.search);
 
@@ -38,6 +39,7 @@ function fillData() {
     document.getElementById("phone").value = p.get("phone") || "";
 }
 
+// Signature Pad
 let canvas, ctx, drawing=false, lastX=0, lastY=0;
 function initSignaturePad() {
     canvas = document.getElementById("signature-pad");
@@ -74,6 +76,79 @@ function clearSignature(){
     document.getElementById("signature-input").value=""; 
 }
 
+// ✅ IMAGE GENERATION (RESTORED)
+function generateContractImage(callback) {
+    const c = document.createElement("canvas");
+    const ctx = c.getContext("2d");
+
+    c.width = 900;
+    c.height = 1200;
+
+    ctx.fillStyle = "#f2f2f2";
+    ctx.fillRect(0, 0, c.width, c.height);
+
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(50, 50, 800, 1100);
+
+    ctx.fillStyle = "#000";
+
+    ctx.font = "bold 26px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Vehicle Transport Agreement", 450, 100);
+
+    ctx.font = "14px Arial";
+    ctx.fillText("SkyLine Professional Logistics", 450, 130);
+
+    ctx.textAlign = "left";
+
+    let y = 180;
+
+    function row(label, value) {
+        ctx.font = "bold 13px Arial";
+        ctx.fillText(label + ":", 80, y);
+        ctx.font = "13px Arial";
+        ctx.fillText(value || "-", 250, y);
+        y += 30;
+    }
+
+    row("Customer Name", document.getElementById("name").value);
+    row("Email", document.getElementById("email").value);
+    row("Phone", document.getElementById("phone").value);
+
+    y += 20;
+
+    row("Vehicle", document.getElementById("vehicle").innerText);
+    row("Condition", document.getElementById("condition").innerText);
+    row("Pickup", document.getElementById("pickup").innerText);
+    row("Pickup ZIP", document.getElementById("pzip").innerText);
+    row("Delivery", document.getElementById("delivery").innerText);
+    row("Delivery ZIP", document.getElementById("dzip").innerText);
+    row("Pickup Date", document.getElementById("date").innerText);
+    row("Estimated Delivery", document.getElementById("est_delivery").innerText);
+    row("Price", "$" + document.getElementById("price").innerText);
+
+    y += 30;
+
+    ctx.fillText("Signature:", 80, y);
+    y += 10;
+    ctx.strokeRect(80, y, 400, 120);
+
+    const sigImg = new Image();
+    sigImg.src = document.getElementById("signature-input").value;
+
+    sigImg.onload = () => {
+        ctx.drawImage(sigImg, 90, y + 10, 300, 100);
+
+        y += 150;
+        ctx.fillText("IP: " + userIP, 80, y);
+        y += 20;
+        ctx.fillText("Timestamp: " + new Date().toString(), 80, y);
+
+        callback(c.toDataURL("image/png"));
+    };
+}
+
+// ✅ FINAL SUBMIT (FIXED)
 async function handleSubmit(e){
     e.preventDefault();
 
@@ -92,17 +167,17 @@ async function handleSubmit(e){
     data.ip = userIP;
     data.timestamp = new Date().toISOString();
 
-    try {
+    generateContractImage(async (img) => {
+
+        data.contractImage = img;
+
         await fetch(SHEET_URL, {
             method:"POST",
             body: JSON.stringify(data)
         });
 
         document.getElementById("bookingForm").submit();
-
-    } catch(err){
-        alert("Error sending data.");
-    }
+    });
 }
 
 window.onload = function(){
@@ -116,14 +191,14 @@ window.onload = function(){
 <body>
 
 <h1>Vehicle Transport Agreement</h1>
-<div class="subtitle">SkyLine Professional Logistics | Licensed & Bonded Auto Transport Coordination</div>
+<div class="subtitle">SkyLine Professional Logistics</div>
 
 <div class="section">
 
 <div class="row">
 <div style="flex:1;"><div class="label">Customer Name</div><input type="text" id="name" required></div>
-<div style="flex:1;"><div class="label">Email ID</div><input type="email" id="email" required></div>
-<div style="flex:1;"><div class="label">Phone Number</div><input type="text" id="phone" required></div>
+<div style="flex:1;"><div class="label">Email</div><input type="email" id="email" required></div>
+<div style="flex:1;"><div class="label">Phone</div><input type="text" id="phone" required></div>
 </div>
 
 <hr>
@@ -136,39 +211,38 @@ window.onload = function(){
 <hr>
 
 <div class="row">
-<div style="flex:2;"><div class="label">Pickup Address</div><div id="pickup"></div></div>
-<div style="flex:1;"><div class="label">Pickup ZIP Code</div><div id="pzip"></div></div>
+<div style="flex:2;"><div class="label">Pickup</div><div id="pickup"></div></div>
+<div style="flex:1;"><div class="label">ZIP</div><div id="pzip"></div></div>
 </div>
 
 <div class="row">
-<div style="flex:2;"><div class="label">Dropoff Address</div><div id="delivery"></div></div>
-<div style="flex:1;"><div class="label">Dropoff ZIP Code</div><div id="dzip"></div></div>
+<div style="flex:2;"><div class="label">Delivery</div><div id="delivery"></div></div>
+<div style="flex:1;"><div class="label">ZIP</div><div id="dzip"></div></div>
 </div>
 
 <hr>
 
 <div class="row">
 <div style="flex:2;"><div class="label">Pickup Date</div><div id="date"></div></div>
-<div style="flex:2;"><div class="label">Estimated Delivery Date</div><div id="est_delivery"></div></div>
-<div style="flex:1;"><div class="label">Total Price</div><div>$<span id="price"></span></div></div>
+<div style="flex:2;"><div class="label">Estimated Delivery</div><div id="est_delivery"></div></div>
+<div style="flex:1;"><div class="label">Price</div><div>$<span id="price"></span></div></div>
 </div>
 
 </div>
 
 <form id="bookingForm" action="https://formsubmit.co/ranveer.sood45@gmail.com" method="POST">
 <input type="hidden" name="_captcha" value="false">
-<input type="hidden" name="_subject" value="New SkyLine Contract Signed">
 <input type="hidden" name="_next" value="https://skylineprofessionalservice.online/">
 
-<input type="hidden" name="Vehicle" id="form_vehicle">
-<input type="hidden" name="Condition" id="form_condition">
-<input type="hidden" name="Pickup Location" id="form_pickup">
-<input type="hidden" name="Pickup ZIP" id="form_pzip">
-<input type="hidden" name="Delivery Location" id="form_delivery">
-<input type="hidden" name="Delivery ZIP" id="form_dzip">
-<input type="hidden" name="Pickup Date" id="form_date">
-<input type="hidden" name="Estimated Delivery" id="form_est_delivery">
-<input type="hidden" name="Quoted Price" id="form_price">
+<input type="hidden" id="form_vehicle">
+<input type="hidden" id="form_condition">
+<input type="hidden" id="form_pickup">
+<input type="hidden" id="form_pzip">
+<input type="hidden" id="form_delivery">
+<input type="hidden" id="form_dzip">
+<input type="hidden" id="form_date">
+<input type="hidden" id="form_est_delivery">
+<input type="hidden" id="form_price">
 
 <div>
 <label><strong>Sign Here:</strong></label>
@@ -177,7 +251,7 @@ window.onload = function(){
 <input type="hidden" name="Signature" id="signature-input">
 </div>
 
-<p><input type="checkbox" required> I confirm the above information is accurate and agree to proceed.</p>
+<p><input type="checkbox" required> I confirm the above information is correct.</p>
 <button type="submit">Confirm Booking</button>
 </form>
 
